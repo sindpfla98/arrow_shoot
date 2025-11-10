@@ -2,9 +2,9 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const TARGET_X = 200;
-const TARGET_Y = 130;
+const TARGET_Y = 170;
 const BOW_X = 200;
-const BOW_Y = 450;
+const BOW_Y = 500;
 const MAX_PULL = 100;
 
 let isPulling = false;
@@ -74,7 +74,7 @@ function drawBow() {
     const bottomEnd = { x: BOW_X + 140, y: BOW_Y + 20 };
 
     // 활시위
-    ctx.strokeStyle = '#1a1a1a';
+    ctx.strokeStyle = '#edededff';
     ctx.lineWidth = 2;
     let pullBowY = BOW_Y + 20 + pullY;
     if (isPulling || arrowReady) {
