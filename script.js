@@ -201,6 +201,49 @@ canvas.addEventListener('mouseleave', () => {
         draw();
     }
 });
+// 마우스 이벤트와 동일하게 터치 이벤트 처리
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // 화면 스크롤 방지
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = touch.clientX - rect.left;
+    const mouseY = touch.clientY - rect.top;
+    const dx = mouseX - BOW_X;
+    const dy = mouseY - BOW_Y;
+    if (Math.sqrt(dx*dx + dy*dy) < 50) isPulling = true;
+});
+
+canvas.addEventListener('touchmove', (e) => {
+    if (!isPulling) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    let mouseX = touch.clientX - rect.left;
+    let mouseY = touch.clientY - rect.top;
+
+    let dx = mouseX - BOW_X;
+    let dy = mouseY - BOW_Y;
+
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    const scale = Math.min(distance, MAX_PULL) / distance;
+    pullX = dx * scale;
+    pullY = dy * scale;
+
+    draw();
+});
+
+canvas.addEventListener('touchend', (e) => {
+    if (isPulling) {
+        const speed = Math.sqrt(pullX**2 + pullY**2) / MAX_PULL * 10 + 5;
+        arrow = { x: BOW_X + pullX, y: BOW_Y + pullY, speed };
+        arrowReady = false;
+        pullX = 0;
+        pullY = 0;
+        isPulling = false;
+        animateArrow();
+    }
+});
+
 let particles = [];
 let arrowHit = false;
 
