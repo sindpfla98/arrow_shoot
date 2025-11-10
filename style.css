@@ -1,0 +1,20 @@
+body {
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    text-align: center;
+}
+
+canvas {
+    border-radius: 10px;
+    cursor: pointer;
+    background: #87CEEB;
+}
