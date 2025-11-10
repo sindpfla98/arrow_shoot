@@ -1,17 +1,21 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-const TARGET_X = 300;
-const TARGET_Y = 100;
-const BOW_X = 300;
-const BOW_Y = 400;
+const TARGET_X = 200;
+const TARGET_Y = 130;
+const BOW_X = 200;
+const BOW_Y = 450;
 const MAX_PULL = 100;
 
 let isPulling = false;
-let pullAmount = 0;
+let pullY = 0;
 let arrow = null;
-let arrowReady = true; // 화살이 활에 장착된 상태
+let arrowReady = true;
+let particles = [];
+let arrowHit = false;
 
+
+// --------------------- 타겟 그리기 ---------------------
 function drawTarget() {
     const rings = [
         { radius: 50, color: '#fff' },
@@ -30,17 +34,20 @@ function drawTarget() {
     });
 }
 
+// --------------------- 활 그리기 ---------------------
 function drawBow() {
     // 활대
     ctx.strokeStyle = '#8B4513';
     ctx.lineWidth = 10;
     ctx.lineCap = 'round';
 
+    // 왼쪽 활대
     ctx.beginPath();
     ctx.moveTo(BOW_X, BOW_Y);
     ctx.bezierCurveTo(BOW_X - 50, BOW_Y - 30, BOW_X - 100, BOW_Y - 20, BOW_X - 140, BOW_Y + 20);
     ctx.stroke();
 
+    // 오른쪽 활대
     ctx.beginPath();
     ctx.moveTo(BOW_X, BOW_Y);
     ctx.bezierCurveTo(BOW_X + 50, BOW_Y - 30, BOW_X + 100, BOW_Y - 20, BOW_X + 140, BOW_Y + 20);
@@ -69,40 +76,37 @@ function drawBow() {
     // 활시위
     ctx.strokeStyle = '#1a1a1a';
     ctx.lineWidth = 2;
-
-    let pullY = BOW_Y + 20;
+    let pullBowY = BOW_Y + 20 + pullY;
     if (isPulling || arrowReady) {
-        // 활시위 끝점이 뒤로 당겨지고 화살 위치 반영
-        pullY += pullAmount;
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(topEnd.x, topEnd.y);
-    ctx.lineTo(BOW_X, pullY);
-    ctx.lineTo(bottomEnd.x, bottomEnd.y);
-    ctx.stroke();
-
-    // 화살 그리기
-    if (arrowReady || isPulling) {
-        drawArrowOnBow(pullY);
+        ctx.beginPath();
+        ctx.moveTo(topEnd.x, topEnd.y);
+        ctx.lineTo(BOW_X, pullBowY);
+        ctx.lineTo(bottomEnd.x, bottomEnd.y);
+        ctx.stroke();
+        drawArrowOnBow(pullBowY);
+    } else {
+        ctx.beginPath();
+        ctx.moveTo(topEnd.x, topEnd.y);
+        ctx.lineTo(bottomEnd.x, bottomEnd.y);
+        ctx.stroke();
     }
 }
 
-// 활에 장착된 화살 그리기
-function drawArrowOnBow(pullY) {
+// --------------------- 활에 장착된 화살 그리기 ---------------------
+function drawArrowOnBow(pullYPos) {
     ctx.strokeStyle = '#D2691E';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(BOW_X, pullY - 125);
-    ctx.lineTo(BOW_X, pullY + 20);
+    ctx.moveTo(BOW_X, pullYPos - 125);
+    ctx.lineTo(BOW_X, pullYPos + 20);
     ctx.stroke();
 
     // 화살촉
     ctx.fillStyle = '#8B0000';
     ctx.beginPath();
-    ctx.moveTo(BOW_X, pullY - 140);
-    ctx.lineTo(BOW_X - 5, pullY - 120);
-    ctx.lineTo(BOW_X + 5, pullY - 120);
+    ctx.moveTo(BOW_X, pullYPos - 140);
+    ctx.lineTo(BOW_X - 5, pullYPos - 120);
+    ctx.lineTo(BOW_X + 5, pullYPos - 120);
     ctx.closePath();
     ctx.fill();
 
@@ -110,15 +114,15 @@ function drawArrowOnBow(pullY) {
     ctx.strokeStyle = '#8B0000';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(BOW_X - 5, pullY + 20);
-    ctx.lineTo(BOW_X, pullY + 10);
-    ctx.lineTo(BOW_X + 5, pullY + 20);
+    ctx.moveTo(BOW_X - 5, pullYPos + 20);
+    ctx.lineTo(BOW_X, pullYPos + 10);
+    ctx.lineTo(BOW_X + 5, pullYPos + 20);
     ctx.stroke();
 }
 
+// --------------------- 발사된 화살 그리기 ---------------------
 function drawArrow() {
     if (!arrow) return;
-
     ctx.strokeStyle = '#D2691E';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -134,7 +138,6 @@ function drawArrow() {
     ctx.closePath();
     ctx.fill();
 
-    // 화살 깃
     ctx.strokeStyle = '#8B0000';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -144,116 +147,12 @@ function drawArrow() {
     ctx.stroke();
 }
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawTarget();
-    drawBow();
-    drawArrow();
-}
-
-function animateArrow() {
-    if (!arrow) return;
-
-    arrow.y -= arrow.speed;
-    if (arrow.y <= TARGET_Y) {
-        arrow.y = TARGET_Y;
-        arrow.x = TARGET_X;
-        draw();
-        return;
-    }
-    draw();
-    requestAnimationFrame(animateArrow);
-}
-
-// 이벤트
-canvas.addEventListener('mousedown', (e) => {
-    if (arrowReady && !arrow) {
-        const rect = canvas.getBoundingClientRect();
-        const mouseY = e.clientY - rect.top;
-        if (Math.abs(mouseY - BOW_Y) < 50) isPulling = true;
-    }
-});
-
-canvas.addEventListener('mousemove', (e) => {
-    if (isPulling) {
-        const rect = canvas.getBoundingClientRect();
-        const mouseY = e.clientY - rect.top;
-        pullAmount = Math.min(Math.max(mouseY - BOW_Y, 0), MAX_PULL);
-        draw();
-    }
-});
-
-canvas.addEventListener('mouseup', () => {
-    if (isPulling && pullAmount > 0) {
-        const speed = (pullAmount / MAX_PULL) * 10 + 5;
-        arrow = { x: BOW_X, y: BOW_Y + pullAmount, speed };
-        arrowReady = false;
-        animateArrow();
-    }
-    isPulling = false;
-    pullAmount = 0;
-});
-
-canvas.addEventListener('mouseleave', () => {
-    if (isPulling) {
-        isPulling = false;
-        pullAmount = 0;
-        draw();
-    }
-});
-// 마우스 이벤트와 동일하게 터치 이벤트 처리
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault(); // 화면 스크롤 방지
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = touch.clientX - rect.left;
-    const mouseY = touch.clientY - rect.top;
-    const dx = mouseX - BOW_X;
-    const dy = mouseY - BOW_Y;
-    if (Math.sqrt(dx*dx + dy*dy) < 50) isPulling = true;
-});
-
-canvas.addEventListener('touchmove', (e) => {
-    if (!isPulling) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    let mouseX = touch.clientX - rect.left;
-    let mouseY = touch.clientY - rect.top;
-
-    let dx = mouseX - BOW_X;
-    let dy = mouseY - BOW_Y;
-
-    const distance = Math.sqrt(dx*dx + dy*dy);
-    const scale = Math.min(distance, MAX_PULL) / distance;
-    pullX = dx * scale;
-    pullY = dy * scale;
-
-    draw();
-});
-
-canvas.addEventListener('touchend', (e) => {
-    if (isPulling) {
-        const speed = Math.sqrt(pullX**2 + pullY**2) / MAX_PULL * 10 + 5;
-        arrow = { x: BOW_X + pullX, y: BOW_Y + pullY, speed };
-        arrowReady = false;
-        pullX = 0;
-        pullY = 0;
-        isPulling = false;
-        animateArrow();
-    }
-});
-
-let particles = [];
-let arrowHit = false;
-
-// 폭죽 생성
+// --------------------- 폭죽 ---------------------
 function createParticles(x, y) {
     particles = [];
     for (let i = 0; i < 50; i++) {
         particles.push({
-            x: x,
-            y: y,
+            x, y,
             vx: (Math.random() - 0.5) * 5,
             vy: (Math.random() - 1.5) * 5,
             alpha: 1,
@@ -263,40 +162,21 @@ function createParticles(x, y) {
     }
 }
 
-// 폭죽 애니메이션
 function animateParticles() {
     particles.forEach(p => {
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.1; // 중력 효과
+        p.vy += 0.1; // 중력
         p.alpha -= 0.02;
     });
     particles = particles.filter(p => p.alpha > 0);
     draw();
-    if (particles.length > 0) {
-        requestAnimationFrame(animateParticles);
-    }
+    if (particles.length > 0) requestAnimationFrame(animateParticles);
 }
 
-// draw 함수에 폭죽 그리기 추가
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawTarget();
-    drawBow();
-    drawArrow();
-
-    // 폭죽 그리기
-    particles.forEach(p => {
-        ctx.fillStyle = `rgba(${hexToRgb(p.color)},${p.alpha})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-    });
-}
-
-// 헥스 색상 -> RGB 변환
+// --------------------- 헬퍼 ---------------------
 function hexToRgb(hex) {
-    if (hex.startsWith("hsl")) return hslToRgb(hex); // hsl 색상 지원
+    if (hex.startsWith("hsl")) return hslToRgb(hex);
     let bigint = parseInt(hex.replace("#",""),16);
     let r = (bigint >> 16) & 255;
     let g = (bigint >> 8) & 255;
@@ -304,7 +184,6 @@ function hexToRgb(hex) {
     return `${r},${g},${b}`;
 }
 
-// HSL -> RGB (폭죽 색상용)
 function hslToRgb(hsl) {
     const sep = hsl.indexOf(",") > -1 ? "," : " ";
     const hslValues = hsl.substr(4).split(")")[0].split(sep).map(s=>parseFloat(s));
@@ -329,10 +208,24 @@ function hslToRgb(hsl) {
     return `${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)}`;
 }
 
-// animateArrow에서 과녁에 도달했을 때 폭죽 실행
+// --------------------- draw ---------------------
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawTarget();
+    drawBow();
+    drawArrow();
+    // 폭죽
+    particles.forEach(p => {
+        ctx.fillStyle = `rgba(${hexToRgb(p.color)},${p.alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+        ctx.fill();
+    });
+}
+
+// --------------------- 화살 애니메이션 ---------------------
 function animateArrow() {
     if (!arrow) return;
-
     const dx = TARGET_X - arrow.x;
     const dy = TARGET_Y - arrow.y;
     const dist = Math.sqrt(dx*dx + dy*dy);
@@ -354,5 +247,69 @@ function animateArrow() {
     requestAnimationFrame(animateArrow);
 }
 
+// --------------------- 이벤트 ---------------------
+// 마우스
+canvas.addEventListener('mousedown', (e) => {
+    if (arrowReady && !arrow) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseY = e.clientY - rect.top;
+        if (Math.abs(mouseY - BOW_Y) < 50) isPulling = true;
+    }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!isPulling) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseY = e.clientY - rect.top;
+    pullY = Math.min(Math.max(mouseY - BOW_Y, 0), MAX_PULL);
+    draw();
+});
+
+canvas.addEventListener('mouseup', () => {
+    if (isPulling && pullY > 0) {
+        arrow = { x: BOW_X, y: BOW_Y + 20 + pullY, speed: (pullY / MAX_PULL)*10 + 5 };
+        arrowReady = false;
+        animateArrow();
+    }
+    isPulling = false;
+    pullY = 0;
+});
+
+canvas.addEventListener('mouseleave', () => {
+    isPulling = false;
+    pullY = 0;
+    draw();
+});
+
+// 터치
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const touchY = touch.clientY - rect.top;
+    if (Math.abs(touchY - BOW_Y) < 50) isPulling = true;
+});
+
+canvas.addEventListener('touchmove', (e) => {
+    if (!isPulling) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const touchY = touch.clientY - rect.top;
+    pullY = Math.min(Math.max(touchY - BOW_Y, 0), MAX_PULL);
+    draw();
+});
+
+canvas.addEventListener('touchend', () => {
+    if (isPulling && pullY > 0) {
+        arrow = { x: BOW_X, y: BOW_Y + 20 + pullY, speed: (pullY / MAX_PULL)*10 + 5 };
+        arrowReady = false;
+        animateArrow();
+    }
+    isPulling = false;
+    pullY = 0;
+});
+
+// --------------------- 초기 draw ---------------------
 draw();
 
